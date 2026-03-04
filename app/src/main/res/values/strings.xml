@@ -42,6 +42,11 @@
 
     <!-- Database Management -->
     <string name="export_database">Export Database</string>
+    <string name="import_database">Import Database</string>
+    <string name="import_confirm_title">Import Database?</string>
+    <string name="import_confirm_message">This will replace all current data with the imported database. This cannot be undone.</string>
+    <string name="import_success">Database imported successfully</string>
+    <string name="import_failure">Import failed</string>
     <string name="wipe_database">Wipe Database</string>
     <string name="wipe_confirm_title">Wipe Database?</string>
     <string name="wipe_confirm_message">This will permanently delete all recorded locations. This cannot be undone.</string>

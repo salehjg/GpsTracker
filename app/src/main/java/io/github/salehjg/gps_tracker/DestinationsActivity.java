@@ -36,8 +36,8 @@ public class DestinationsActivity extends AppCompatActivity {
     private LocationDao locationDao;
     private ExecutorService executor;
 
-    private Long rangeStartMs;
-    private Long rangeEndMs;
+    private long rangeStartMs;
+    private long rangeEndMs;
 
     private final SimpleDateFormat dateTimeFmt =
             new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
@@ -62,6 +62,21 @@ public class DestinationsActivity extends AppCompatActivity {
 
         locationDao = LocationDatabase.getInstance(this).locationDao();
         executor = Executors.newSingleThreadExecutor();
+
+        // Default date range to today
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        rangeStartMs = cal.getTimeInMillis();
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        rangeEndMs = cal.getTimeInMillis();
+        buttonDateRange.setText(dateFmt.format(new Date(rangeStartMs))
+                + " — " + dateFmt.format(new Date(rangeEndMs)));
 
         buttonDateRange.setOnClickListener(v -> showDateRangePicker());
         findViewById(R.id.buttonAnalyze).setOnClickListener(v -> runAnalysis());
@@ -101,11 +116,6 @@ public class DestinationsActivity extends AppCompatActivity {
     }
 
     private void runAnalysis() {
-        if (rangeStartMs == null || rangeEndMs == null) {
-            showMessage(getString(R.string.no_date_range_selected));
-            return;
-        }
-
         String radiusStr = editRadius.getText().toString().trim();
         double radiusMeters = 50;
         if (!radiusStr.isEmpty()) {

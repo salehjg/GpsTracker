@@ -13,6 +13,8 @@ public abstract class LocationDatabase extends RoomDatabase {
 
     private static volatile LocationDatabase INSTANCE;
 
+    public static final String DB_NAME = "gps_tracker_db";
+
     public static LocationDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             synchronized (LocationDatabase.class) {
@@ -20,11 +22,20 @@ public abstract class LocationDatabase extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(
                             context.getApplicationContext(),
                             LocationDatabase.class,
-                            "gps_tracker_db"
+                            DB_NAME
                     ).build();
                 }
             }
         }
         return INSTANCE;
+    }
+
+    public static void closeDatabase() {
+        synchronized (LocationDatabase.class) {
+            if (INSTANCE != null) {
+                INSTANCE.close();
+                INSTANCE = null;
+            }
+        }
     }
 }

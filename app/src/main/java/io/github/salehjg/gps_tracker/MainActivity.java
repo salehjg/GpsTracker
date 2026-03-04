@@ -22,12 +22,13 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -77,6 +78,13 @@ public class MainActivity extends AppCompatActivity {
                 startTrackingService();
             });
 
+    private final ActivityResultLauncher<String[]> importDbLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    confirmAndImportDatabase(uri);
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -119,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.buttonExportDb).setOnClickListener(v -> exportDatabase());
 
+        findViewById(R.id.buttonImportDb).setOnClickListener(v ->
+                importDbLauncher.launch(new String[]{"*/*"}));
+
         findViewById(R.id.buttonWipeDb).setOnClickListener(v -> wipeDatabase());
     }
 
@@ -143,13 +154,17 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            List<LocationEntry> entries = locationDao.getEntriesInRange(0, Long.MAX_VALUE);
+            // Flush WAL to main database file before copying
+            LocationDatabase.getInstance(this).getOpenHelper()
+                    .getWritableDatabase().execSQL("PRAGMA wal_checkpoint(FULL)");
+
+            File dbFile = getDatabasePath(LocationDatabase.DB_NAME);
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-            String filename = "gps_tracker_export_" + timestamp + ".csv";
+            String filename = "gps_tracker_export_" + timestamp + ".db";
 
             ContentValues values = new ContentValues();
             values.put(MediaStore.Downloads.DISPLAY_NAME, filename);
-            values.put(MediaStore.Downloads.MIME_TYPE, "text/csv");
+            values.put(MediaStore.Downloads.MIME_TYPE, "application/x-sqlite3");
             values.put(MediaStore.Downloads.RELATIVE_PATH, "Download");
 
             Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
@@ -158,13 +173,12 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            try (OutputStream os = getContentResolver().openOutputStream(uri);
-                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(os))) {
-                pw.println("id,latitude,longitude,altitude,accuracy,speed,timestamp");
-                for (LocationEntry e : entries) {
-                    pw.printf(Locale.US, "%d,%f,%f,%f,%f,%f,%d%n",
-                            e.id, e.latitude, e.longitude, e.altitude,
-                            e.accuracy, e.speed, e.timestamp);
+            try (InputStream is = new FileInputStream(dbFile);
+                 OutputStream os = getContentResolver().openOutputStream(uri)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, bytesRead);
                 }
                 runOnUiThread(() -> Toast.makeText(this,
                         getString(R.string.export_success, filename), Toast.LENGTH_LONG).show());
@@ -183,6 +197,41 @@ public class MainActivity extends AppCompatActivity {
                             locationDao.deleteAll();
                             runOnUiThread(() -> Toast.makeText(this,
                                     R.string.wipe_success, Toast.LENGTH_SHORT).show());
+                        }))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmAndImportDatabase(Uri uri) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.import_confirm_title)
+                .setMessage(R.string.import_confirm_message)
+                .setPositiveButton(android.R.string.ok, (d, w) ->
+                        executor.execute(() -> {
+                            LocationDatabase.closeDatabase();
+
+                            File dbFile = getDatabasePath(LocationDatabase.DB_NAME);
+                            File walFile = new File(dbFile.getPath() + "-wal");
+                            File shmFile = new File(dbFile.getPath() + "-shm");
+
+                            try (InputStream is = getContentResolver().openInputStream(uri);
+                                 OutputStream os = new FileOutputStream(dbFile)) {
+                                byte[] buffer = new byte[8192];
+                                int bytesRead;
+                                while ((bytesRead = is.read(buffer)) != -1) {
+                                    os.write(buffer, 0, bytesRead);
+                                }
+                                walFile.delete();
+                                shmFile.delete();
+
+                                locationDao = LocationDatabase.getInstance(this).locationDao();
+                                runOnUiThread(() -> Toast.makeText(this,
+                                        R.string.import_success, Toast.LENGTH_LONG).show());
+                            } catch (Exception e) {
+                                locationDao = LocationDatabase.getInstance(this).locationDao();
+                                runOnUiThread(() -> Toast.makeText(this,
+                                        R.string.import_failure, Toast.LENGTH_SHORT).show());
+                            }
                         }))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
