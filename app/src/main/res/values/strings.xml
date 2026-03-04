@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">GPS Tracker</string>
+    <string name="status_idle">Status: Idle</string>
+    <string name="status_tracking">Status: Tracking</string>
+    <string name="sampling_interval">Sampling Interval</string>
+    <string name="start_tracking">Start Tracking</string>
+    <string name="stop_tracking">Stop Tracking</string>
+    <string name="view_map">View Map</string>
+    <string name="route_map">Route Map</string>
+    <string name="day_label">Day:</string>
+    <string name="no_data">No recorded routes</string>
+    <string name="point_count_format">%d points</string>
+
+    <!-- Destinations Activity -->
+    <string name="destinations">Destinations</string>
+    <string name="destinations_title">Destinations</string>
+    <string name="select_date_range">Select Date Range</string>
+    <string name="radius_label">Radius (m):</string>
+    <string name="analyze">Analyze</string>
+    <string name="no_date_range_selected">Please select a date range first</string>
+    <string name="no_destinations_found">No destinations found in the selected range</string>
+    <string name="analyzing">Analyzing…</string>
+    <string name="col_number">#</string>
+    <string name="col_latitude">Latitude</string>
+    <string name="col_longitude">Longitude</string>
+    <string name="col_address">Address</string>
+    <string name="col_arrival">Arrival</string>
+    <string name="col_departure">Departure</string>
+    <string name="col_duration">Duration</string>
+
+    <!-- Commutes Activity -->
+    <string name="commutes">Commutes</string>
+    <string name="commutes_title">Commutes</string>
+    <string name="no_commutes_found">No commutes found in the selected range</string>
+    <string name="col_from">From</string>
+    <string name="col_to">To</string>
+    <string name="col_start_time">Start Time</string>
+    <string name="col_end_time">End Time</string>
+    <string name="col_distance">Distance</string>
+    <string name="col_elev_gain">Elev. Gain</string>
+    <string name="col_elev_loss">Elev. Loss</string>
+
+    <!-- Database Management -->
+    <string name="export_database">Export Database</string>
+    <string name="wipe_database">Wipe Database</string>
+    <string name="wipe_confirm_title">Wipe Database?</string>
+    <string name="wipe_confirm_message">This will permanently delete all recorded locations. This cannot be undone.</string>
+    <string name="wipe_success">Database wiped</string>
+    <string name="export_success">Exported to Downloads/%s</string>
+    <string name="export_failure">Export failed</string>
+    <string name="export_empty">No data to export</string>
+</resources>
