@@ -63,6 +63,15 @@ public class LocationService extends Service implements LocationListener {
 
         try {
             locationManager.removeUpdates(this);
+            // Seed lastLocation so the tick can record immediately even if
+            // onLocationChanged has not fired yet (e.g. phone is stationary).
+            Location seed = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (seed == null) {
+                seed = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+            if (seed != null && lastLocation == null) {
+                lastLocation = seed;
+            }
             locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     intervalMs,

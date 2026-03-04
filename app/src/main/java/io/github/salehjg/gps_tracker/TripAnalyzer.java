@@ -7,6 +7,7 @@ import android.location.Location;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,12 +45,54 @@ public class TripAnalyzer {
         public int pointCount;
     }
 
+    /**
+     * Compute an adaptive radius from the data: 3x the median consecutive-point distance.
+     * Falls back to 100m if there are fewer than 2 points.
+     */
+    public static double adaptiveRadius(List<LocationEntry> entries) {
+        if (entries == null || entries.size() < 2) return 100.0;
+        List<Float> distances = new ArrayList<>();
+        float[] buf = new float[1];
+        for (int i = 1; i < entries.size(); i++) {
+            Location.distanceBetween(
+                    entries.get(i - 1).latitude, entries.get(i - 1).longitude,
+                    entries.get(i).latitude, entries.get(i).longitude, buf);
+            distances.add(buf[0]);
+        }
+        Collections.sort(distances);
+        double median = distances.get(distances.size() / 2);
+        return Math.max(median * 3.0, 10.0); // floor at 10m
+    }
+
+    /**
+     * Compute an adaptive time threshold from the data: 3x the median consecutive-point time gap.
+     * Falls back to 150 000ms if there are fewer than 2 points.
+     */
+    public static long adaptiveMinDuration(List<LocationEntry> entries) {
+        if (entries == null || entries.size() < 2) return 150_000L;
+        List<Long> gaps = new ArrayList<>();
+        for (int i = 1; i < entries.size(); i++) {
+            gaps.add(entries.get(i).timestamp - entries.get(i - 1).timestamp);
+        }
+        Collections.sort(gaps);
+        long median = gaps.get(gaps.size() / 2);
+        return Math.max(median * 3, 30_000L); // floor at 30s
+    }
+
     public static List<Destination> findDestinations(List<LocationEntry> entries,
                                                       double radiusMeters,
                                                       long minDurationMs) {
         List<Destination> destinations = new ArrayList<>();
         if (entries == null || entries.isEmpty()) {
             return destinations;
+        }
+
+        // Adaptive values when 0 is passed
+        if (radiusMeters <= 0) {
+            radiusMeters = adaptiveRadius(entries);
+        }
+        if (minDurationMs <= 0) {
+            minDurationMs = adaptiveMinDuration(entries);
         }
 
         int clusterStart = 0;

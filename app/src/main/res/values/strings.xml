@@ -16,6 +16,7 @@
     <string name="destinations_title">Destinations</string>
     <string name="select_date_range">Select Date Range</string>
     <string name="radius_label">Radius (m):</string>
+    <string name="time_threshold_label">Time (s):</string>
     <string name="analyze">Analyze</string>
     <string name="no_date_range_selected">Please select a date range first</string>
     <string name="no_destinations_found">No destinations found in the selected range</string>

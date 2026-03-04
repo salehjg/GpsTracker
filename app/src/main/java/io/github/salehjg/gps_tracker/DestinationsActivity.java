@@ -26,10 +26,9 @@ import java.util.concurrent.Executors;
 
 public class DestinationsActivity extends AppCompatActivity {
 
-    private static final long MIN_DURATION_MS = 600_000; // 10 minutes
-
     private MaterialButton buttonDateRange;
     private EditText editRadius;
+    private EditText editTimeThreshold;
     private ProgressBar progressBar;
     private TextView textMessage;
     private TableLayout tableResults;
@@ -56,6 +55,7 @@ public class DestinationsActivity extends AppCompatActivity {
 
         buttonDateRange = findViewById(R.id.buttonDateRange);
         editRadius = findViewById(R.id.editRadius);
+        editTimeThreshold = findViewById(R.id.editTimeThreshold);
         progressBar = findViewById(R.id.progressBar);
         textMessage = findViewById(R.id.textMessage);
         tableResults = findViewById(R.id.tableResults);
@@ -117,10 +117,19 @@ public class DestinationsActivity extends AppCompatActivity {
 
     private void runAnalysis() {
         String radiusStr = editRadius.getText().toString().trim();
-        double radiusMeters = 50;
+        double radiusMeters = 100;
         if (!radiusStr.isEmpty()) {
             try {
                 radiusMeters = Double.parseDouble(radiusStr);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        String timeStr = editTimeThreshold.getText().toString().trim();
+        long minDurationMs = 150_000; // 150 seconds default
+        if (!timeStr.isEmpty()) {
+            try {
+                minDurationMs = (long) (Double.parseDouble(timeStr) * 1000);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -130,11 +139,12 @@ public class DestinationsActivity extends AppCompatActivity {
         clearTableRows();
 
         final double radius = radiusMeters;
+        final long duration = minDurationMs;
 
         executor.execute(() -> {
             List<LocationEntry> entries = locationDao.getEntriesInRange(rangeStartMs, rangeEndMs);
             List<TripAnalyzer.Destination> destinations =
-                    TripAnalyzer.findDestinations(entries, radius, MIN_DURATION_MS);
+                    TripAnalyzer.findDestinations(entries, radius, duration);
 
             // Reverse geocode each destination
             for (TripAnalyzer.Destination dest : destinations) {
